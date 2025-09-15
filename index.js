@@ -32,6 +32,7 @@ const electronicsProducts = database.collection("electronicsProduct");
 const womenFashion = database.collection("WomenFashion")
 const winterFashion = database.collection('WinterFashion')
 const gadgetAndGare = database.collection('Gadgate&Gear') 
+const usersCollection = database.collection('users')
 
 async function run() {
     try {
@@ -67,6 +68,31 @@ async function run() {
             const result = await gadgetAndGare.find().toArray();
             res.send(result)
         })
+
+        // show user
+        app.get('/users', async(req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+
+
+        // for users store in database
+        app.post('/users', async(req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        })
+
+
+
+
+
+         app.get("/users/:email", async(req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            res.send(user);
+        });
 
 
 
