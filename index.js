@@ -78,6 +78,21 @@ async function run() {
         });
 
 
+        // all product for sort filter and other action
+
+        app.get('/allProducts1', async (req, res) => {
+            const allProduct = await electronicsProducts.aggregate([
+                { $addFields: { category: "Electronics" } },
+                { $unionWith: { coll: "WomenFashion", pipeline: [{ $addFields: { category: "WomenFashion" } }] } },
+                { $unionWith: { coll: "WinterFashion", pipeline: [{ $addFields: { category: "WinterFashion" } }] } },
+                { $unionWith: { coll: "Gadgate&Gear", pipeline: [{ $addFields: { category: "Gadgate&Gear" } }] } }
+            ]).toArray();
+            res.send(allProduct);
+        })
+
+
+
+
         // all product use aggregate 
 
         // server.js
