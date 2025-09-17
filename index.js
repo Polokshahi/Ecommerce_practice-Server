@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -93,6 +93,29 @@ async function run() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // all product use aggregate 
 
         // server.js
@@ -125,6 +148,63 @@ async function run() {
                 res.status(500).json({ message: "Failed to fetch products" });
             }
         });
+
+
+
+
+
+
+
+
+
+        // update 
+
+   
+
+        // Update product route
+        app.put("/updateProduct/:id", async (req, res) => {
+            const { id } = req.params;
+            const updatedData = req.body; // form data from client
+
+            // Collections to check
+            const collections = [
+                electronicsProducts,
+                womenFashion,
+                winterFashion,
+                gadgetAndGare
+            ];
+
+            try {
+                let updated = false;
+
+                for (let col of collections) {
+                    const filter = { _id: new ObjectId(id) };   // Find by _id
+                    const updateDoc = { $set: updatedData };    // Set all fields from form
+                    const options = { upsert: false };         // Only update, no insert
+
+                    const result = await col.updateOne(filter, updateDoc, options);
+
+                    console.log(
+                        `${result.matchedCount} document(s) matched, updated ${result.modifiedCount} document(s)`
+                    );
+
+                    if (result.matchedCount > 0) {
+                        updated = true;
+                        break; // Stop once updated
+                    }
+                }
+
+                if (!updated) {
+                    return res.status(404).json({ message: "Product not found" });
+                }
+
+                res.json({ message: "Product updated successfully" });
+            } catch (err) {
+                console.error("Update failed:", err);
+                res.status(500).json({ message: "Update failed", error: err.message });
+            }
+        });
+
 
 
 
