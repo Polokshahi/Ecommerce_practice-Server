@@ -165,6 +165,7 @@ async function run() {
         app.put("/updateProduct/:id", async (req, res) => {
             const { id } = req.params;
             const updatedData = req.body; // form data from client
+            console.log(updatedData);
 
             // Collections to check
             const collections = [
