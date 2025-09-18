@@ -81,14 +81,62 @@ async function run() {
         // all product for sort filter and other action
 
         app.get('/allProducts1', async (req, res) => {
-            const allProduct = await electronicsProducts.aggregate([
-                { $addFields: { category: "Electronics" } },
-                { $unionWith: { coll: "WomenFashion", pipeline: [{ $addFields: { category: "WomenFashion" } }] } },
-                { $unionWith: { coll: "WinterFashion", pipeline: [{ $addFields: { category: "WinterFashion" } }] } },
-                { $unionWith: { coll: "Gadgate&Gear", pipeline: [{ $addFields: { category: "Gadgate&Gear" } }] } }
-            ]).toArray();
-            res.send(allProduct);
-        })
+            try {
+                const allProduct = await electronicsProducts.aggregate([
+                    // Electronics
+                    {
+                        $addFields: {
+                            category: { $ifNull: ["$category", "Electronics"] }
+                        }
+                    },
+                    // WomenFashion
+                    {
+                        $unionWith: {
+                            coll: "WomenFashion",
+                            pipeline: [
+                                {
+                                    $addFields: {
+                                        category: { $ifNull: ["$category", "WomenFashion"] }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    // WinterFashion
+                    {
+                        $unionWith: {
+                            coll: "WinterFashion",
+                            pipeline: [
+                                {
+                                    $addFields: {
+                                        category: { $ifNull: ["$category", "WinterFashion"] }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    // Gadgate&Gear
+                    {
+                        $unionWith: {
+                            coll: "Gadgate&Gear",
+                            pipeline: [
+                                {
+                                    $addFields: {
+                                        category: { $ifNull: ["$category", "Gadgate&Gear"] }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]).toArray();
+
+                res.send(allProduct);
+            } catch (err) {
+                console.error("Error fetching products:", err);
+                res.status(500).json({ message: "Error fetching products" });
+            }
+        });
+
 
 
 
@@ -125,26 +173,74 @@ async function run() {
                 const perPage = 10;
                 const skip = (page - 1) * perPage;
 
+                // products with pagination
                 const products = await electronicsProducts.aggregate([
-                    { $addFields: { category: "Electronics" } },
-                    { $unionWith: { coll: "WomenFashion", pipeline: [{ $addFields: { category: "WomenFashion" } }] } },
-                    { $unionWith: { coll: "WinterFashion", pipeline: [{ $addFields: { category: "WinterFashion" } }] } },
-                    { $unionWith: { coll: "Gadgate&Gear", pipeline: [{ $addFields: { category: "Gadgate&Gear" } }] } }
+                    // Electronics
+                    { $addFields: { category: { $ifNull: ["$category", "Electronics"] } } },
+                    // WomenFashion
+                    {
+                        $unionWith: {
+                            coll: "WomenFashion",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "WomenFashion"] } } }
+                            ]
+                        }
+                    },
+                    // WinterFashion
+                    {
+                        $unionWith: {
+                            coll: "WinterFashion",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "WinterFashion"] } } }
+                            ]
+                        }
+                    },
+                    // Gadgate&Gear
+                    {
+                        $unionWith: {
+                            coll: "Gadgate&Gear",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "Gadgate&Gear"] } } }
+                            ]
+                        }
+                    }
                 ])
                     .skip(skip)
                     .limit(perPage)
                     .toArray();
 
+                // total count (without skip/limit)
                 const totalCount = await electronicsProducts.aggregate([
-                    { $addFields: { category: "Electronics" } },
-                    { $unionWith: { coll: "WomenFashion", pipeline: [{ $addFields: { category: "WomenFashion" } }] } },
-                    { $unionWith: { coll: "WinterFashion", pipeline: [{ $addFields: { category: "WinterFashion" } }] } },
-                    { $unionWith: { coll: "Gadgate&Gear", pipeline: [{ $addFields: { category: "Gadgate&Gear" } }] } }
+                    { $addFields: { category: { $ifNull: ["$category", "Electronics"] } } },
+                    {
+                        $unionWith: {
+                            coll: "WomenFashion",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "WomenFashion"] } } }
+                            ]
+                        }
+                    },
+                    {
+                        $unionWith: {
+                            coll: "WinterFashion",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "WinterFashion"] } } }
+                            ]
+                        }
+                    },
+                    {
+                        $unionWith: {
+                            coll: "Gadgate&Gear",
+                            pipeline: [
+                                { $addFields: { category: { $ifNull: ["$category", "Gadgate&Gear"] } } }
+                            ]
+                        }
+                    }
                 ]).toArray();
 
                 res.json({ products, total: totalCount.length });
             } catch (err) {
-                console.error(err);
+                console.error("Error fetching all products:", err);
                 res.status(500).json({ message: "Failed to fetch products" });
             }
         });
@@ -157,9 +253,10 @@ async function run() {
 
 
 
-        // update 
 
-   
+
+
+
 
         // Update product route
         app.put("/updateProduct/:id", async (req, res) => {
@@ -203,6 +300,43 @@ async function run() {
             } catch (err) {
                 console.error("Update failed:", err);
                 res.status(500).json({ message: "Update failed", error: err.message });
+            }
+        });
+
+
+        // delete product
+        app.delete("/allProducts/:id", async (req, res) => {
+            try {
+                const { id } = req.params;
+                console.log("Deleting product with id:", id);
+
+                const query = { _id: new ObjectId(id) };
+
+                const collections = [
+                    electronicsProducts,
+                    womenFashion,
+                    winterFashion,
+                    gadgetAndGare,
+                ];
+
+                let deleted = false;
+
+                for (let col of collections) {
+                    const result = await col.deleteOne(query);
+                    if (result.deletedCount > 0) {
+                        deleted = true;
+                        break; 
+                    }
+                }
+
+                if (deleted) {
+                    res.json({ success: true, message: "Product deleted successfully" });
+                } else {
+                    res.json({ success: false, message: "No product found with this id" });
+                }
+            } catch (error) {
+                console.error("Delete error:", error);
+                res.status(500).json({ success: false, error: error.message });
             }
         });
 
